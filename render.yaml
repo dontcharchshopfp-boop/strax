@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: astra-gateway
+    runtime: docker
+    plan: free
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: UPSTREAM_BASE_URL
+        sync: false
+      - key: UPSTREAM_API_KEY
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: SESSION_SECRET
+        sync: false
+      - key: ADMIN_BACKDOOR_PATH
+        value: /admin/orex/strax
+      - key: ANTHROPIC_DEFAULT_MODEL
+        value: kimi-k3
+      - key: SUPABASE_DB_URL
+        sync: false
+      - key: MODEL_MAP
+        value: '{"kimi-k3":{"upstream":"kimi-k3","label":"Kimi K3"},"glm-5.2":{"upstream":"glm-5.2","label":"GLM 5.2"},"qwen3.7-plus":{"upstream":"qwen3.7-plus","label":"Qwen 3.7 Plus"},"qwen3.8-flash":{"upstream":"qwen3.8-flash","label":"Qwen 3.8 Flash"},"deepseek-v4.1-flash":{"upstream":"deepseek-v4.1-flash","label":"DeepSeek V4.1 Flash"},"kimi-k2.6":{"upstream":"kimi-k2.6","label":"Kimi K2.6"},"deepseek-v4-flash":{"upstream":"deepseek-v4-flash","label":"DeepSeek V4 Flash"},"deepseek-v4-pro":{"upstream":"deepseek-v4-pro","label":"DeepSeek V4 Pro"},"qwen3.7-flash":{"upstream":"qwen3.7-flash","label":"Qwen 3.7 Flash"},"qwen3.8-max-0902":{"upstream":"qwen3.8-max-0902","label":"Qwen 3.8 Max"},"glm-5.3":{"upstream":"glm-5.3","label":"GLM 5.3"},"gpt-5.6-sol":{"upstream":"kimi-k3","label":"GPT 5.6 Sol"},"gpt-5.6-terra":{"upstream":"kimi-k3","label":"GPT 5.6 Terra"},"gpt-5.6-luna":{"upstream":"kimi-k3","label":"GPT 5.6 Luna"},"gpt-6-astra":{"upstream":"kimi-k3","label":"GPT 6 ASTRA"},"claude-opus-5":{"upstream":"kimi-k3","label":"Claude Opus 5"}}'

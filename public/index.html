@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Strax — AI Gateway</title>
+<link rel="icon" href="/strax-logo.jpg" type="image/jpeg" />
+<script src="/vendor/lucide.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0b0c0f;
+    --surface: #121417;
+    --surface2: #171a1f;
+    --border: #212530;
+    --border-hover: #343945;
+    --text: #f2f3f5;
+    --muted: #9fa1a8;
+    --dim: #64666e;
+    --accent: #7487f7;
+    --green: #4ade80;
+    --red: #f87171;
+    --amber: #fbbf24;
+  }
+  html { color-scheme: dark; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  .mono, code, pre, input.key-input {
+    font-family: ui-monospace, 'Cascadia Mono', 'JetBrains Mono', Consolas, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .wrap { max-width: 740px; margin: 0 auto; padding: 0 24px; }
+
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  @keyframes pop { from { transform: scale(.92); opacity: 0; } to { transform: none; opacity: 1; } }
+  @keyframes copyPop { 0% { transform: scale(1); } 50% { transform: scale(1.18); } 100% { transform: scale(1); } }
+
+  /* ── Topbar — floating island ── */
+  .topbar {
+    position: sticky; top: 18px; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    margin-top: 24px;
+    padding: 9px 9px 9px 15px;
+    background: rgba(17,19,23,.88);
+    backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--border); border-radius: 18px;
+    animation: fadeUp .5s ease-out backwards;
+  }
+  .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+  .brand img { width: 26px; height: 26px; border-radius: 8px; object-fit: cover; }
+  .brand .wordmark { font-size: 15px; font-weight: 650; letter-spacing: -.01em; }
+  .admin-link {
+    display: inline-flex; align-items: center; gap: 5px;
+    color: var(--muted); text-decoration: none; font-size: 12.5px; font-weight: 600;
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: 11px;
+    transition: color .15s, border-color .15s, background .15s, transform .12s;
+  }
+  .admin-link:hover { color: var(--text); border-color: var(--border-hover); background: var(--surface2); transform: translateY(-1px); }
+  .admin-link:active { transform: translateY(0); }
+  .admin-link svg { width: 12px; height: 12px; }
+
+  main { padding: 48px 0 80px; }
+
+  /* ── Hero ── */
+  .hero { text-align: center; }
+  .hero > * { animation: fadeUp .55s ease-out backwards; }
+  .hero h1 { animation-delay: .04s; }
+  .hero .sub { animation-delay: .11s; }
+  .hero .endpoint { animation-delay: .18s; }
+  h1 {
+    font-size: clamp(36px, 6.2vw, 54px);
+    font-weight: 650;
+    letter-spacing: -.042em;
+    line-height: 1.06;
+  }
+  h1 em { font-style: normal; color: var(--muted); }
+  .sub { margin: 18px auto 0; color: var(--muted); font-size: 16px; max-width: 440px; }
+
+  .endpoint {
+    margin: 28px auto 0;
+    display: inline-flex; align-items: center; gap: 12px;
+    border: 1px solid var(--border); border-radius: 9px;
+    background: var(--surface);
+    padding: 9px 9px 9px 16px; font-size: 13px;
+    transition: border-color .15s;
+  }
+  .endpoint:hover { border-color: var(--border-hover); }
+  .endpoint .lbl { color: var(--dim); font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+  .endpoint code { color: var(--text); }
+  .copy {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--muted);
+    cursor: pointer; padding: 5px 8px; display: inline-grid; place-items: center;
+    transition: color .15s, border-color .15s;
+  }
+  .copy:hover { color: var(--text); border-color: var(--border-hover); }
+  .copy.copied { color: var(--green); border-color: rgba(74,222,128,.4); animation: copyPop .32s ease; }
+  .copy svg { width: 12px; height: 12px; }
+
+  /* ── Sections ── */
+  section.block { margin-top: 52px; opacity: 0; transform: translateY(16px); }
+  section.block.visible { opacity: 1; transform: none; transition: opacity .55s ease-out, transform .55s ease-out; }
+  .sec-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; }
+  .sec-head h2 { font-size: 20px; font-weight: 650; letter-spacing: -.02em; }
+  .sec-head .meta { color: var(--dim); font-size: 12px; font-weight: 550; }
+
+  /* ── Checker ── */
+  .card {
+    border: 1px solid var(--border); border-radius: 12px;
+    background: var(--surface);
+    padding: 28px;
+  }
+  .card-title { display: flex; align-items: center; gap: 9px; font-size: 15px; font-weight: 650; }
+  .card-title svg { width: 15px; height: 15px; color: var(--accent); }
+  .card .hint { color: var(--muted); font-size: 13px; margin-top: 5px; }
+
+  .check-row { display: flex; gap: 9px; margin-top: 20px; }
+  input.key-input {
+    flex: 1; min-width: 0;
+    background: var(--bg);
+    border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-size: 13px;
+    padding: 10px 14px; outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  input.key-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(116,135,247,.14); }
+  input.key-input::placeholder { color: var(--dim); }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    background: #f4f4f6; color: #0b0c0f; border: none; cursor: pointer;
+    font-family: inherit; font-size: 13px; font-weight: 620;
+    padding: 0 18px; border-radius: 8px; height: 40px; white-space: nowrap;
+    transition: background .15s, transform .12s;
+  }
+  .btn:hover { background: #ffffff; transform: translateY(-1px); }
+  .btn:active { transform: translateY(0); }
+  .btn svg { width: 14px; height: 14px; }
+
+  .alert { display: none; margin-top: 14px; padding: 11px 14px; border-radius: 8px; font-size: 13px; align-items: center; gap: 8px; }
+  .alert.error { display: flex; background: rgba(248,113,113,.06); border: 1px solid rgba(248,113,113,.22); color: var(--red); }
+  .alert svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  #result { display: none; margin-top: 24px; border-top: 1px solid var(--border); padding-top: 24px; }
+  #result.show { display: block; animation: rise .25s ease; }
+  @keyframes rise { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+
+  .status-line { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  .status-line .lbl { color: var(--dim); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+  .status-line .name { font-weight: 620; margin-top: 3px; font-size: 15px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 600; padding: 3px 11px; border-radius: 999px;
+    animation: pop .25s ease-out;
+  }
+  .pill .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+  .pill.active { color: var(--green); background: rgba(74,222,128,.07); border: 1px solid rgba(74,222,128,.2); }
+  .pill.blocked { color: var(--red); background: rgba(248,113,113,.07); border: 1px solid rgba(248,113,113,.2); }
+  .pill.expired { color: var(--amber); background: rgba(251,191,36,.07); border: 1px solid rgba(251,191,36,.2); }
+
+  .balance { margin-top: 20px; }
+  .balance .num { font-size: 38px; font-weight: 650; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+  .balance .num .sfx { font-size: 14px; color: var(--dim); font-weight: 500; letter-spacing: 0; margin-left: 5px; }
+  .balance .cap { color: var(--dim); font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; margin-top: 3px; }
+  .bar { margin-top: 14px; height: 4px; border-radius: 999px; background: var(--surface2); overflow: hidden; }
+  .bar > div { height: 100%; border-radius: 999px; background: var(--accent); transition: width .4s ease; }
+
+  .kv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 20px 24px; margin-top: 24px; }
+  #result.show .kv, #result.show .codebox { animation: fadeUp .45s ease-out backwards; }
+  #result.show .kv:nth-child(1) { animation-delay: .04s; }
+  #result.show .kv:nth-child(2) { animation-delay: .08s; }
+  #result.show .kv:nth-child(3) { animation-delay: .12s; }
+  #result.show .kv:nth-child(4) { animation-delay: .16s; }
+  #result.show .kv:nth-child(5) { animation-delay: .2s; }
+  #result.show .kv:nth-child(6) { animation-delay: .24s; }
+  #result.show .codebox { animation-delay: .28s; }
+  .kv .k { color: var(--dim); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+  .kv .v { margin-top: 5px; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; word-break: break-word; }
+  .kv.wide { grid-column: 1 / -1; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .chip {
+    font-family: ui-monospace, Consolas, monospace; font-size: 11px;
+    border: 1px solid var(--border); border-radius: 5px; padding: 2px 8px; color: var(--muted);
+    background: var(--surface2);
+  }
+
+  .codebox { margin-top: 24px; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; background: #0d0e11; }
+  .codebox-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 8px 8px 14px; border-bottom: 1px solid var(--border);
+    color: var(--dim); font-size: 10px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase;
+    font-family: ui-monospace, Consolas, monospace;
+  }
+  .codebox pre { padding: 16px; overflow-x: auto; font-size: 12px; line-height: 1.7; color: #c9cbd3; }
+  .codebox .s { color: #9fb3f8; }
+  .codebox .c { color: #5a5d68; }
+
+  /* ── Models list ── */
+  .model-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .model-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 9px; cursor: pointer;
+    transition: border-color .15s, background .15s, transform .12s;
+    min-width: 0;
+  }
+  .model-row:hover { border-color: var(--border-hover); background: var(--surface2); transform: translateY(-2px); }
+  .model-row:active { transform: translateY(0); }
+  .model-row code { font-size: 12.5px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .model-row .lbl { color: var(--muted); font-size: 12px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .model-row .cp { color: var(--dim); opacity: 0; transition: opacity .12s; display: grid; place-items: center; }
+  .model-row:hover .cp { opacity: 1; }
+  .model-row .cp svg { width: 12px; height: 12px; }
+
+  /* ── Docs tabs ── */
+  .tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+  .tab {
+    background: none; border: 1px solid transparent; border-radius: 7px;
+    color: var(--muted); font-family: inherit; font-size: 12.5px; font-weight: 600;
+    padding: 6px 13px; cursor: pointer; transition: color .15s, background .15s;
+  }
+  .tab:hover { color: var(--text); background: var(--surface); }
+  .tab.active { color: var(--text); background: var(--surface2); border-color: var(--border); }
+
+  .note {
+    margin-top: 14px; padding: 12px 16px;
+    border: 1px solid rgba(251,191,36,.18); border-left: 2px solid var(--amber);
+    background: rgba(251,191,36,.03); color: var(--muted); font-size: 13px; border-radius: 0 8px 8px 0;
+  }
+  .note b { color: var(--text); font-weight: 620; }
+
+  footer { border-top: 1px solid var(--border); padding: 26px 0 44px; color: var(--dim); font-size: 12px; }
+  footer .wrap { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+
+  @media (max-width: 600px) {
+    .check-row { flex-direction: column; }
+    .model-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    section.block { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="topbar">
+      <div class="brand">
+        <img src="/strax-logo.jpg" alt="Strax" />
+        <span class="wordmark">Strax</span>
+      </div>
+      <a class="admin-link" href="/admin">Admin <i data-lucide="arrow-up-right"></i></a>
+    </header>
+  </div>
+
+  <div class="wrap">
+    <main>
+      <section class="hero">
+        <h1>One key.<br /><em>Every model.</em></h1>
+        <p class="sub">A drop-in replacement for the OpenAI API. Point your app or agent at the base URL and use your access key.</p>
+        <div class="endpoint">
+          <span class="lbl">Base URL</span>
+          <code class="mono" id="baseUrl"></code>
+          <button class="copy" onclick="copyText(baseUrl, this)" title="Copy"><i data-lucide="copy"></i></button>
+        </div>
+      </section>
+
+      <section class="block">
+        <div class="card">
+          <div class="card-title"><i data-lucide="key-round"></i> Check your API key</div>
+          <p class="hint">Balance, usage history and status — no login required.</p>
+
+          <div class="check-row">
+            <input class="key-input" id="keyInput" type="text" placeholder="astra-..." autocomplete="off" spellcheck="false" />
+            <button class="btn" id="checkBtn" onclick="checkKey()"><i data-lucide="search"></i> Check</button>
+          </div>
+
+          <div class="alert" id="alert"><i data-lucide="alert-circle"></i><span id="alertText"></span></div>
+
+          <div id="result">
+            <div class="status-line">
+              <div>
+                <div class="lbl">Key</div>
+                <div class="name" id="keyName"></div>
+              </div>
+              <span class="pill" id="statusPill"><span class="dot"></span><span id="statusText"></span></span>
+            </div>
+
+            <div class="balance">
+              <div class="num"><span id="tokensNum">—</span><span class="sfx" id="numSfx"></span></div>
+              <div class="cap">Tokens remaining</div>
+              <div class="bar"><div id="barFill" style="width:0%"></div></div>
+            </div>
+
+            <div class="kv-grid">
+              <div class="kv"><div class="k">Used</div><div class="v mono" id="tokensUsed">—</div></div>
+              <div class="kv"><div class="k">Limit</div><div class="v mono" id="tokenLimit">—</div></div>
+              <div class="kv"><div class="k">Requests</div><div class="v mono" id="requests">—</div></div>
+              <div class="kv"><div class="k">Expires</div><div class="v" id="expires">—</div></div>
+              <div class="kv"><div class="k">Last used</div><div class="v" id="lastUsed">—</div></div>
+              <div class="kv"><div class="k">Models used</div><div class="chips" id="models"></div></div>
+              <div class="kv wide"><div class="k">Available models</div><div class="chips" id="availModels"></div></div>
+            </div>
+
+          <div class="codebox">
+            <div class="codebox-head"><span>curl</span><button class="copy" onclick="copyText(curlText, this)" title="Copy"><i data-lucide="copy"></i></button></div>
+            <pre id="curlText"></pre>
+          </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="block" id="modelsSec" style="display:none;">
+        <div class="sec-head">
+          <h2>Models</h2>
+          <span class="meta" id="modelsCount"></span>
+        </div>
+        <div class="model-grid" id="modelGrid"></div>
+      </section>
+
+      <section class="block">
+        <div class="sec-head"><h2>Connect an agent</h2></div>
+        <div class="tabs">
+          <button class="tab active" data-tab="opencode" onclick="switchTab('opencode')">OpenCode</button>
+          <button class="tab" data-tab="codex" onclick="switchTab('codex')">Codex CLI</button>
+          <button class="tab" data-tab="claude" onclick="switchTab('claude')">Claude Code</button>
+          <button class="tab" data-tab="curl" onclick="switchTab('curl')">curl</button>
+        </div>
+        <div class="codebox">
+          <div class="codebox-head"><span id="docsLabel">opencode.json</span><button class="copy" onclick="copyText(docsCode, this)" title="Copy"><i data-lucide="copy"></i></button></div>
+          <pre id="docsCode"></pre>
+        </div>
+        <div class="note"><b>Claude Code</b> runs through the Anthropic-compatible <code>/v1/messages</code> endpoint — text, streaming and tool calls are translated automatically. Any model name it sends falls back to your catalog.</div>
+      </section>
+    </main>
+  </div>
+
+  <footer>
+    <div class="wrap">
+      <span>Strax Gateway</span>
+      <span class="mono">/v1/chat/completions · /v1/models</span>
+    </div>
+  </footer>
+
+<script>
+  const baseUrl = location.origin + '/v1';
+  document.getElementById('baseUrl').textContent = baseUrl;
+
+  let lastKey = '';
+  let curlModel = 'kimi-k3';
+
+  const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function copyText(el, btn) {
+    navigator.clipboard.writeText(typeof el === 'string' ? el : el.textContent);
+    if (btn && !REDUCED) {
+      btn.classList.add('copied');
+      setTimeout(() => btn.classList.remove('copied'), 1100);
+    }
+  }
+
+  // Reveal sections as they enter the viewport.
+  const sections = document.querySelectorAll('section.block');
+  if ('IntersectionObserver' in window && !REDUCED) {
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          io.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.08 });
+    sections.forEach((s) => io.observe(s));
+  } else {
+    sections.forEach((s) => s.classList.add('visible'));
+  }
+
+  // Animated number count-up for the token balance.
+  function animateCount(el, to) {
+    const from = Number(el.dataset.v || 0);
+    el.dataset.v = to;
+    if (REDUCED || from === to) { el.textContent = fmt.format(to); return; }
+    const start = performance.now();
+    const dur = 550;
+    (function tick(t) {
+      const p = Math.min(1, (t - start) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt.format(Math.round(from + (to - from) * eased));
+      if (p < 1) requestAnimationFrame(tick);
+    })(start);
+  }
+
+  const fmt = new Intl.NumberFormat('en-US');
+  const fmtDate = (iso) => iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function showError(msg) {
+    document.getElementById('alertText').textContent = msg;
+    document.getElementById('alert').className = 'alert error';
+    document.getElementById('result').classList.remove('show');
+  }
+
+  function buildCurl(key, model) {
+    return 'curl <span class="s">' + baseUrl + '/chat/completions</span> \\\n' +
+      '  -H <span class="s">"Authorization: Bearer ' + key + '"</span> \\\n' +
+      '  -H <span class="s">"Content-Type: application/json"</span> \\\n' +
+      '  -d <span class="s">\'{"model": "' + model + '", "messages": [{"role": "user", "content": "Hello!"}]}' + "'</span>";
+  }
+
+  async function checkKey() {
+    const key = document.getElementById('keyInput').value.trim();
+    if (!key) return showError('Enter your API key first.');
+    document.getElementById('alert').className = 'alert';
+    const btn = document.getElementById('checkBtn');
+    btn.disabled = true;
+    btn.style.opacity = .6;
+    try {
+      const res = await fetch('/v1/key/info', { headers: { Authorization: 'Bearer ' + key } });
+      const data = await res.json();
+      if (!res.ok) return showError(data?.error?.message || 'Invalid API key.');
+      lastKey = key;
+
+      document.getElementById('keyName').textContent = data.name || 'API key';
+      const pill = document.getElementById('statusPill');
+      pill.className = 'pill ' + data.status;
+      document.getElementById('statusText').textContent = data.status;
+
+      document.getElementById('numSfx').textContent = '/ ' + fmt.format(data.tokenLimit);
+      animateCount(document.getElementById('tokensNum'), data.tokensRemaining);
+      document.getElementById('tokensUsed').textContent = fmt.format(data.tokensUsed);
+      document.getElementById('tokenLimit').textContent = fmt.format(data.tokenLimit);
+      document.getElementById('requests').textContent = fmt.format(data.requests);
+      document.getElementById('expires').textContent = data.expiresAt ? fmtDate(data.expiresAt) : 'Never';
+      document.getElementById('lastUsed').textContent = fmtDate(data.lastUsedAt);
+
+      const pct = data.tokenLimit > 0 ? Math.min(100, (data.tokensUsed / data.tokenLimit) * 100) : 0;
+      const fill = document.getElementById('barFill');
+      fill.style.width = pct + '%';
+      fill.style.background = pct >= 90 ? 'var(--red)' : 'var(--accent)';
+
+      document.getElementById('models').innerHTML = (data.modelsUsed && data.modelsUsed.length)
+        ? data.modelsUsed.map((m) => '<span class="chip">' + m + '</span>').join('')
+        : '<span style="color:var(--dim);font-size:12px;">—</span>';
+
+      document.getElementById('availModels').innerHTML = (data.availableModels && data.availableModels.length)
+        ? data.availableModels.map((m) => '<span class="chip">' + m.id + (m.label && m.label !== m.id ? ' · ' + m.label : '') + '</span>').join('')
+        : '<span style="color:var(--dim);font-size:12px;">—</span>';
+
+      document.getElementById('curlText').innerHTML = buildCurl(key, curlModel);
+      document.getElementById('result').classList.add('show');
+      icons();
+    } catch {
+      showError('Could not reach the server. Try again later.');
+    } finally {
+      btn.disabled = false;
+      btn.style.opacity = 1;
+    }
+  }
+
+  document.getElementById('keyInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') checkKey();
+  });
+
+  function icons() { try { window.lucide && window.lucide.createIcons(); } catch {} }
+
+  (async () => {
+    try {
+      const res = await fetch('/api/models');
+      const data = await res.json();
+      if (!res.ok || !data.models?.length) return;
+      document.getElementById('modelsCount').textContent = data.models.length + ' available';
+      document.getElementById('modelGrid').innerHTML = data.models.map((m) =>
+        '<div class="model-row" onclick="useModel(this, \'' + escapeHtml(m.id).replace(/'/g, '&#39;') + '\')" title="Click to copy model id">' +
+          '<code class="mono">' + escapeHtml(m.id) + '</code>' +
+          '<span class="lbl">' + escapeHtml(m.label || m.id) + '</span>' +
+          '<span class="cp"><i data-lucide="copy"></i></span>' +
+        '</div>'
+      ).join('');
+      const sec = document.getElementById('modelsSec');
+      sec.style.display = 'block';
+      requestAnimationFrame(() => sec.classList.add('visible'));
+      icons();
+    } catch { /* section stays hidden */ }
+  })();
+
+  function useModel(el, id) {
+    navigator.clipboard.writeText(id);
+    curlModel = id;
+    if (lastKey) document.getElementById('curlText').innerHTML = buildCurl(lastKey, id);
+    document.querySelectorAll('.model-row').forEach((r) => (r.style.borderColor = ''));
+    el.style.borderColor = 'rgba(116,135,247,.55)';
+  }
+
+  const ORIGIN = location.origin;
+  const DOCS = {
+    opencode:
+      '<span class="c">// opencode.json — in the project or ~/.config/opencode/opencode.json</span>\n' +
+      '{\n' +
+      '  <span class="s">"$schema"</span>: "https://opencode.ai/config.json",\n' +
+      '  <span class="s">"provider"</span>: {\n' +
+      '    <span class="s">"strax"</span>: {\n' +
+      '      <span class="s">"npm"</span>: "@ai-sdk/openai-compatible",\n' +
+      '      <span class="s">"name"</span>: "strax",\n' +
+      '      <span class="s">"options"</span>: {\n' +
+      '        <span class="s">"baseURL"</span>: "' + ORIGIN + '/v1",\n' +
+      '        <span class="s">"apiKey"</span>: "astra-..."\n' +
+      '      },\n' +
+      '      <span class="s">"models"</span>: {\n' +
+      '        <span class="s">"kimi-k3"</span>: { <span class="s">"name"</span>: "Kimi K3" },\n' +
+      '        <span class="s">"gpt-6-astra"</span>: { <span class="s">"name"</span>: "GPT 6 ASTRA" }\n' +
+      '      }\n' +
+      '    }\n' +
+      '  }\n' +
+      '}\n\n' +
+      '<span class="c">// then in opencode: /models → strax</span>',
+    codex:
+      '<span class="c"># ~/.codex/config.toml</span>\n' +
+      'model = "kimi-k3"\n' +
+      'model_provider = "strax"\n\n' +
+      '[model_providers.strax]\n' +
+      'name = "strax"\n' +
+      'base_url = "' + ORIGIN + '/v1"\n' +
+      'env_key = "STRAX_API_KEY"\n' +
+      'wire_api = "chat"\n\n' +
+      '<span class="c"># and export the key:</span>\n' +
+      'export STRAX_API_KEY=astra-...',
+    curl:
+      'curl ' + ORIGIN + '/v1/chat/completions \\\n' +
+      '  -H "Authorization: Bearer astra-..." \\\n' +
+      '  -H "Content-Type: application/json" \\\n' +
+      '  -d \'{"model": "kimi-k3", "messages": [{"role": "user", "content": "Hello!"}] }\'',
+    claude:
+      '<span class="c"># Claude Code → Anthropic-compatible endpoint</span>\n' +
+      'export ANTHROPIC_BASE_URL=' + ORIGIN + '\n' +
+      'export ANTHROPIC_AUTH_TOKEN=astra-...\n' +
+      'export ANTHROPIC_MODEL=kimi-k3\n' +
+      'export ANTHROPIC_SMALL_FAST_MODEL=kimi-k3\n\n' +
+      'claude\n\n' +
+      '<span class="c"># ANTHROPIC_API_KEY=astra-... also works (sent as x-api-key)</span>',
+  };
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('active', t.dataset.tab === name));
+    document.getElementById('docsCode').innerHTML = DOCS[name];
+    document.getElementById('docsLabel').textContent = { opencode: 'opencode.json', codex: 'config.toml', claude: 'terminal', curl: 'terminal' }[name];
+  }
+  switchTab('opencode');
+
+  icons();
+</script>
+</body>
+</html>
